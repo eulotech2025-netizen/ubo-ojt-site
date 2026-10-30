@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>신입 교재</title>
+<!-- 처음 — 칸 셋으로 들어가는 문. 교재(learn.html) · 용어(terms.html) · 부품(parts.html). 용어와 부품은 terms-data.js 한 파일을 같이 읽는다. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .door svg { width: 38px; height: 38px; fill: none; stroke: var(--find); stroke-width: 1.6; }
+  .door .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .door .count { font-size: 13px; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+  </div>
+  <nav class="tabs" aria-label="칸 셋">
+    <a href="index.html" class="on" aria-current="page">처음</a><a href="learn.html">교재</a><a href="terms.html">용어</a><a href="parts.html">부품</a>
+  </nav>
+
+  <header class="hero">
+    <div class="kick">우보브랜드샵</div>
+    <h1 class="brush">신입 교재</h1>
+    <p>칸 셋으로 되어 있다. 교재는 순서대로 읽고, 용어는 모르는 말을 찾고, 부품은 우리가 파는 것을 눈으로 본다.</p>
+  </header>
+
+  <section class="doors" aria-label="칸 셋">
+    <a class="door" href="learn.html">
+      <span class="top"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="5" cy="27" r="1.8"/><path d="M5 27 C 10 22, 14 25, 17 19 S 22 12, 24 11" stroke-dasharray="2.6 2.6"/><path d="M24 11 V3"/><path d="M24 3.5 L30 6 L24 8.5"/></svg><span class="count">0~9장 · 카드 14 · 길잡이</span></span>
+      <span class="t brush">교재</span>
+      <span class="aim">사수가 옆에 없어도 신입이 주문 하나를 처음부터 끝까지 따라간다</span>
+      <span class="w">주문 하나의 일생 0~9장, 일 받았을 때 꺼내 보는 카드, 이카운트 길잡이</span>
+      <span class="go">교재로 →</span>
+    </a>
+    <a class="door" href="terms.html">
+      <span class="top"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 9 C 12 6.5, 7.5 6.5, 4 8 V25 C 7.5 23.5, 12 23.5, 16 26 C 20 23.5, 24.5 23.5, 28 25 V8 C 24.5 6.5, 20 6.5, 16 9 Z"/><path d="M16 9 V26"/><path d="M7.5 13 H12.5 M7.5 17 H12.5 M19.5 13 H24.5 M19.5 17 H24.5"/></svg><span class="count" id="nWords"></span></span>
+      <span class="t brush">용어</span>
+      <span class="aim">사람마다 다르게 부르는 이름을 하나로 모은다</span>
+      <span class="w">검색창 하나. 「쇼바」 라고 쳐도 플랩스테이로 넘겨준다</span>
+      <span class="go">용어로 →</span>
+    </a>
+    <a class="door" href="parts.html">
+      <span class="top"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M17 8 L25 12.5 L25 21.5 L17 26 L9 21.5 L9 12.5 Z"/><path d="M9 12.5 L17 17 L25 12.5 M17 17 V26"/><path d="M4 19 A 12 12 0 0 1 10.5 4.8"/><path d="M6.4 3.6 L10.5 4.8 L8.6 8.6"/></svg><span class="count" id="nParts"></span></span>
+      <span class="t brush">부품</span>
+      <span class="aim">말로 열 번 설명할 움직임을 한 번 돌려 보여 준다</span>
+      <span class="w">부엌 한 칸의 열 자리, 자리마다 옆으로 넘기는 줄. 움직이는 부품은 3D로</span>
+      <span class="go">부품으로 →</span>
+    </a>
+  </section>
+
+  <p class="foot">(추정) = 실무자 확인 전 · 주소는 회사 안에서만 나눈다</p>
+</div>
+<script src="terms-data.js"></script>
+<script src="site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS;
+  document.getElementById('nWords').textContent = '낱말 ' + T.WORDS.length + ' · 다른 말 ' + T.ALIASES.length;
+  var models = T.PARTS.filter(function (p) { return T.modelItem(p); }).length;
+  document.getElementById('nParts').textContent = '분류 ' + T.PARTS.length + ' · 3D ' + models;
+  UBO_SITE.init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>용어 — 신입 교재</title>
+<!--
+  낱말 한 장 — term.html?t=damper. t 에 다른 말(뎀퍼 · 쇼바)이나 이름을 줘도 그 낱말로 넘겨준다(위키의 넘겨주기).
+  쉬운 말 · 다른 말 · 부품으로 · 나오는 곳 · 관련 낱말. 내용은 terms-data.js.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+  </div>
+  <nav class="tabs" aria-label="칸 셋">
+    <a href="index.html">처음</a><a href="learn.html">교재</a><a href="terms.html" class="on">용어</a><a href="parts.html">부품</a>
+  </nav>
+  <main id="main"></main>
+  <p class="foot">낱말 풀이는 부품 칸의 쉬운 말에서 옮겼다 · 주소는 회사 안에서만 나눈다</p>
+</div>
+<script src="terms-data.js"></script>
+<script src="site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS, S = window.UBO_SITE, esc = S.esc;
+  var main = document.getElementById('main');
+  var asked = S.param('t') || '';
+  var res = T.resolve(asked);
+  var crumb = '<nav class="crumb" aria-label="자리"><a href="terms.html">용어</a><span>›</span>';
+
+  if (!res) {
+    main.innerHTML = crumb + '<span>' + esc(asked) + '</span></nav><p class="empty-q">「' + esc(asked) + '」 은 아직 없는 말이에요. <a class="chip" href="terms.html?q=' + encodeURIComponent(asked) + '">용어 칸에서 찾기</a></p>';
+    S.init();
+    return;
+  }
+  var w = res.word;
+  document.title = w.name + ' — 용어 — 신입 교재';
+  var al = T.aliasesOf(w.id);
+  var html = crumb + '<span>' + esc(w.name) + '</span></nav>';
+  if (res.from) html += '<p class="redirect">「<b>' + esc(res.from) + '</b>」 에서 넘어왔어요. 같은 것을 여기서는 「' + esc(w.name) + '」 로 모았어요.</p>';
+  html += '<header class="head"><h1 class="brush">' + esc(w.name) + '</h1>' + (w.en ? '<span class="en">' + esc(w.en) + '</span>' : '') +
+    '<p class="ez">' + esc(w.easy) + (w.guess ? ' <span class="badge guess">추정</span>' : '') + '</p></header>';
+
+  var facts = [];
+  if (al.length) facts.push(['다른 말', '<div class="chips">' + al.map(function (a) { return '<span class="chip">' + esc(a) + '</span>'; }).join('') + '</div>']);
+  if (w.part && w.part.length) {
+    var p0 = T.part(w.part[0]);
+    var links = w.part.length === 2 && T.item(p0, w.part[1])
+      ? '<a class="chip" href="part.html?p=' + p0.id + '&amp;i=' + w.part[1] + '">' + esc(T.label(T.item(p0, w.part[1]))) + '</a>'
+      : w.part.map(function (id) { var p = T.part(id); return p ? '<a class="chip" href="part.html?p=' + p.id + '">' + esc(p.name) + (T.modelItem(p) ? ' <span class="badge m3">3D</span>' : '') + '</a>' : ''; }).join('');
+    facts.push(['부품으로', '<div class="chips">' + links + '</div>']);
+  }
+  if (w.from && w.from.length) facts.push(['나오는 곳', '<div class="chips">' + w.from.map(function (id) { var p = T.part(id); return '<a class="chip" href="part.html?p=' + p.id + '">' + T.NUM[p.g] + ' ' + esc(p.name) + '</a>'; }).join('') + '</div>']);
+  if (w.see && w.see.length) facts.push(['관련 낱말', '<div class="chips">' + w.see.map(function (id) { var x = T.word(id); return '<a class="chip" href="term.html?t=' + x.id + '">' + esc(x.name) + '</a>'; }).join('') + '</div>']);
+  facts.push(['확인', w.guess ? '<span class="badge guess">추정</span> 실무자 확인 전 — 새로 지은 풀이' : '부품 칸의 쉬운 말에서 옮긴 풀이']);
+  html += '<dl class="facts">' + facts.map(function (f) { return '<dt>' + f[0] + '</dt><dd>' + f[1] + '</dd>'; }).join('') + '</dl>';
+  main.innerHTML = html;
+  S.init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>부품 — 신입 교재</title>
+<!--
+  부품 칸 목록 — 위는 전시장 부엌 한 칸 3D(번호 ①~⑩ 을 누르면 그 줄로), 아래는 자리마다 옆으로 넘기는 줄(넷플릭스 줄).
+  타일 하나 = 쇼핑몰 분류 하나 → part.html?p=<id>. 내용은 terms-data.js. 3D 는 3d/showroom.glb, 번호 자리는 3d/showroom-spots.js — 둘 다 3d/build_showroom.py 가 만든다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  /* 3D 는 글 폭을 벗어나 화면 너비(최대 1200px)로 크게 */
+  .scene { position: relative; margin-top: 18px; width: min(1200px, calc(100vw - 40px)); margin-left: calc(50% - min(600px, 50vw - 20px));
+    border: 1.6px solid var(--ink); border-radius: calc(var(--r) + 4px); background: #fff; overflow: hidden; }
+  .scene model-viewer { display: block; width: 100%; height: clamp(440px, 76vh, 780px); --poster-color: #fff; }
+  /* 번호 단추 — 단추 가운데가 그 자리에 오고, 이름은 오른쪽에 붙는다 */
+  .scene .hs { position: relative; width: 34px; height: 34px; padding: 0; border-radius: 50%; border: 2px solid var(--ink); background: #fff; color: var(--ink);
+    font: inherit; font-size: 19px; font-weight: 700; line-height: 1; display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22); }
+  .scene .hs .lb { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 15px; font-weight: 700;
+    padding: 4px 9px 3px; border-radius: 5px; background: rgba(255, 255, 255, 0.94); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); }
+  .scene .hs:hover, .scene .hs.on { background: #ffe27a; border-width: 2.4px; }
+  .hint { text-align: center; font-size: 13px; color: var(--ink-faint); margin-top: 6px; }
+  .walk { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; margin-top: 10px; }
+  .walk a { font-size: 14px; line-height: 1; padding: 6px 11px 5px; border-radius: 999px; border: 1px solid var(--ink-faint); }
+  .walk a:hover, .walk a.on { background: var(--marker); border-color: var(--find); }
+  .row.on .row-h .t { background: linear-gradient(transparent 55%, var(--marker) 55%, var(--marker) 94%, transparent 94%); }
+  .legend { margin-top: 22px; text-align: center; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; }
+  html[data-style="blueprint"] .walk a, html[data-style="blueprint"] .scene .hs { border-radius: 0; }
+  html[data-style="textbook"] .scene { border-width: 1.2px; border-color: #d1d5db; }
+  @media (max-width: 600px) {
+    .scene model-viewer { height: 300px; }
+    .scene .hs { width: 28px; height: 28px; font-size: 16px; }
+    .scene .hs .lb { display: none; }  /* 폰은 번호만 — 이름은 아래 자리 단추에 */
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+  </div>
+  <nav class="tabs" aria-label="칸 셋">
+    <a href="index.html">처음</a><a href="learn.html">교재</a><a href="terms.html">용어</a><a href="parts.html" class="on" aria-current="page">부품</a>
+  </nav>
+
+  <header class="hero">
+    <div class="kick">우보브랜드샵 신입 교재 · 부품 칸</div>
+    <h1 class="brush">우리가 파는 것</h1>
+    <p>부엌 한 칸에 열 자리가 있다. 쇼핑몰 분류가 전부 이 안에 있다. 번호를 누르면 그 줄로 간다.</p>
+  </header>
+
+  <section class="scene" id="scene"></section>
+  <p class="hint">손가락으로 돌려 본다</p>
+  <nav class="walk" id="walk" aria-label="자리 고르기"></nav>
+
+  <p class="legend"><span><span class="badge m3">3D</span> 돌려 볼 수 있음</span><span><span class="badge">3D 준비 중</span> 움직이는 부품</span><span><span class="badge">사진 준비 중</span> 움직이지 않는 부품</span><span><span class="badge guess">추정</span> 상품 설명 확인 전</span></p>
+
+  <div id="rows"></div>
+
+  <section class="sec" id="blum">
+    <h2 class="brush">블럼 홈페이지 묶음 ↔ 우리 쇼핑몰 묶음</h2>
+    <p class="w">블럼은 열 묶음으로 보여 주고, 우리 쇼핑몰은 다섯으로 판다. 나머지 다섯은 쇼핑몰에 따로 없다.</p>
+    <table class="tbl">
+      <thead><tr><th>블럼 홈페이지</th><th>쉬운 말</th><th>우리 쇼핑몰 「블럼」 안에서</th></tr></thead>
+      <tbody id="blumRows"></tbody>
+    </table>
+  </section>
+
+  <p class="foot">쇼핑몰 분류 이름은 실무자가 쓰는 말이라 그대로 두었다 · 주소는 회사 안에서만 나눈다</p>
+</div>
+<script src="terms-data.js"></script>
+<script src="3d/showroom-spots.js"></script>
+<script src="site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS, S = window.UBO_SITE, esc = S.esc;
+  var ICON_3D = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M17 8 L25 12.5 L25 21.5 L17 26 L9 21.5 L9 12.5 Z"/><path d="M9 12.5 L17 17 L25 12.5 M17 17 V26"/></svg>';
+  var ICON_PHOTO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="9" width="24" height="17" rx="2"/><circle cx="16" cy="17.5" r="5"/><path d="M11 9 L13 5.5 H19 L21 9"/></svg>';
+
+  // 타일 하나 — 부품 칸 목록 · 부품 한 장의 관련 부품이 같이 쓴다
+  function tile(p) {
+    var m = T.modelItem(p);
+    var pic = m ? '<span class="pic has3d"><span class="badge m3">3D</span>' + ICON_3D + '</span>'
+      : p.moves ? '<span class="pic"><span class="badge">3D 준비 중</span>' + ICON_3D + '</span>'
+      : '<span class="pic"><span class="badge">사진 준비 중</span>' + ICON_PHOTO + '</span>';
+    return '<a class="tile" href="part.html?p=' + p.id + '">' + pic +
+      '<span class="tx"><span class="nm">' + esc(p.name) + (p.tag ? ' <span class="badge ' + p.tag + '">' + esc(p.brand) + '</span>' : '') + '</span>' +
+      '<span class="ez">' + esc(p.easy) + (p.guess ? ' <span class="badge guess">추정</span>' : '') + '</span></span></a>';
+  }
+
+  var rows = document.getElementById('rows'), walk = document.getElementById('walk');
+  rows.innerHTML = T.GROUPS.map(function (g) {
+    var ps = T.PARTS.filter(function (p) { return p.g === g.no; });
+    return '<section class="row" id="g' + g.no + '"><div class="row-h"><span class="n">' + T.NUM[g.no] + '</span><h2 class="t brush">' + esc(g.name) + ' — ' + esc(g.title) + '</h2><span class="w">' + esc(g.note) + '</span></div>' +
+      '<div class="strip">' + ps.map(tile).join('') + '</div></section>';
+  }).join('');
+  walk.innerHTML = T.GROUPS.map(function (g) { return '<a href="#g' + g.no + '" data-g="' + g.no + '"><b>' + T.NUM[g.no] + '</b> ' + esc(g.name) + '</a>'; }).join('');
+  document.getElementById('blumRows').innerHTML = T.BLUM.map(function (b) {
+    var ours = b.part ? '<a href="part.html?p=' + b.part + '">' + esc(b.ours) + '</a>' : esc(b.ours);
+    return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.easy) + '</td><td>' + ours + (b.guess ? ' <span class="badge guess">추정</span>' : '') + '</td></tr>';
+  }).join('');
+
+  // 그 자리의 줄로 — 그림체 꼬리(#textbook)를 지키려고 주소를 바꾸지 않고 굴린다
+  var picked = '';
+  function go(k) {
+    picked = k;
+    Array.prototype.forEach.call(rows.querySelectorAll('.row'), function (r) { r.classList.toggle('on', r.id === 'g' + k); });
+    Array.prototype.forEach.call(walk.querySelectorAll('a'), function (a) { a.classList.toggle('on', a.dataset.g === k); });
+    var row = document.getElementById('g' + k);
+    if (row) row.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    mark();
+  }
+  walk.addEventListener('click', function (e) { var a = e.target.closest('a[data-g]'); if (a) { e.preventDefault(); go(a.dataset.g); } });
+
+  // ---- 전시장 부엌 한 칸 3D — 번호 단추는 모형 안 그 자리에 붙는다 ----
+  var LABEL = { 1: '문짝 · 판', 2: '경첩 · 리프트', 3: '서랍 · 레일', 4: '손잡이', 5: '안쪽 수납', 6: '발 · 걸레받이', 7: '잠금', 8: '피스 · 전기', 9: '주방 가전', 10: '싱크 · 수전' };
+  var SPOT = window.UBO_SHOWROOM_SPOTS || {};
+  var scene = document.getElementById('scene');
+  scene.innerHTML = '<model-viewer id="mv" src="3d/showroom.glb?v=2" alt="전시장 부엌 한 칸 — 번호를 누르면 그 자리의 줄로 간다" camera-controls touch-action="pan-y" disable-pan interaction-prompt="none"' +
+    ' shadow-intensity="0.6" exposure="1.05" environment-image="neutral" field-of-view="30deg" camera-target="0.05m 1.28m -0.45m" camera-orbit="-8deg 82deg 4.6m"' +
+    ' min-camera-orbit="-55deg 50deg 2.5m" max-camera-orbit="55deg 92deg 16m">' +
+    Object.keys(LABEL).map(function (k) {
+      return '<button type="button" class="hs" slot="hotspot-g' + k + '" data-position="' + SPOT[k] + '" data-normal="0m 0m 1m" data-g="' + k + '" aria-label="' + T.NUM[k] + ' ' + LABEL[k] + ' 줄로">' +
+        T.NUM[k] + '<span class="lb">' + LABEL[k] + '</span></button>';
+    }).join('') + '</model-viewer>';
+  var mvs = document.createElement('script');
+  mvs.type = 'module';
+  mvs.src = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js';
+  document.head.appendChild(mvs);
+  // 부엌 + 견본대(약 3.6m)가 화면 너비를 채우게 거리를 잡는다 — 머리판 · 단 끝은 잘려도 된다
+  var mv = document.getElementById('mv');
+  function fit() {
+    var a = mv.clientWidth / Math.max(1, mv.clientHeight);
+    mv.cameraOrbit = '-8deg 82deg ' + Math.max(4.5, 8.1 / a).toFixed(2) + 'm';
+  }
+  fit();
+  mv.addEventListener('load', fit);
+  window.addEventListener('resize', fit);
+  function mark() { Array.prototype.forEach.call(scene.querySelectorAll('.hs'), function (b) { b.classList.toggle('on', b.dataset.g === picked); }); }
+  scene.addEventListener('click', function (e) { var b = e.target.closest('.hs'); if (b) go(b.dataset.g); });
+
+  S.init();
+})();
+</script>
+</body>
+</html>

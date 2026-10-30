@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>용어 — 신입 교재</title>
+<!--
+  용어 칸 — 위키처럼. 위는 검색창 하나(이름 · 영어 · 다른 말 · 쉬운 말에서 찾는다), 아래는 가나다 첫소리로 묶은 낱말과 부품 이름.
+  다른 말(쇼바 · 뎀퍼 …)을 치면 넘겨줄 낱말을 알려 준다. 낱말 한 장은 term.html?t=<id>, 부품 이름은 part.html 로.
+  업무 말(전표 · 출고 …)은 아직 없다 — 교재 본문에서 다음에 담는다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+  </div>
+  <nav class="tabs" aria-label="칸 셋">
+    <a href="index.html">처음</a><a href="learn.html">교재</a><a href="terms.html" class="on" aria-current="page">용어</a><a href="parts.html">부품</a>
+  </nav>
+
+  <header class="hero">
+    <div class="kick">우보브랜드샵 신입 교재 · 용어 칸</div>
+    <h1 class="brush">용어 사전</h1>
+    <p>사람마다 다르게 부르는 이름을 하나로 모은다. 현장에서 쓰는 말로 쳐도 찾는다.</p>
+  </header>
+
+  <form class="search" id="form" role="search">
+    <label for="q" class="sr" style="position:absolute;left:-9999px">찾을 말</label>
+    <input id="q" type="search" placeholder="예: 쇼바 · 댐퍼 · 2홀 · 인덕션" autocomplete="off">
+  </form>
+  <p class="hint" id="hint" aria-live="polite"></p>
+  <nav class="jump" id="jump" aria-label="첫소리로 가기"></nav>
+
+  <div id="list"></div>
+
+  <p class="foot">낱말 풀이는 부품 칸의 쉬운 말에서 옮겼다 · <span class="badge guess">추정</span> = 실무자 확인 전 · 업무 말(전표 · 출고 …)은 다음에 담는다</p>
+</div>
+<script src="terms-data.js"></script>
+<script src="site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS, S = window.UBO_SITE, esc = S.esc;
+  var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', BASE = { 'ㄲ': 'ㄱ', 'ㄸ': 'ㄷ', 'ㅃ': 'ㅂ', 'ㅆ': 'ㅅ', 'ㅉ': 'ㅈ' };
+  function initial(s) {
+    var c = s.charCodeAt(0);
+    if (c >= 0xAC00 && c <= 0xD7A3) { var ch = CHO[Math.floor((c - 0xAC00) / 588)]; return BASE[ch] || ch; }
+    return '#';
+  }
+  function norm(s) { return String(s || '').toLowerCase().replace(/[\s·()\-_/&›]/g, ''); }
+
+  // 한 줄 = 낱말 하나 또는 부품 이름 하나
+  var rows = [];
+  T.WORDS.forEach(function (w) {
+    rows.push({ kind: 'word', name: w.name, en: w.en, easy: w.easy, guess: w.guess, al: T.aliasesOf(w.id), href: 'term.html?t=' + w.id });
+  });
+  T.PARTS.forEach(function (p) {
+    rows.push({ kind: 'part', name: p.name, easy: p.easy, guess: p.guess, al: [], href: 'part.html?p=' + p.id, where: T.NUM[p.g] + ' ' + T.group(p.g).name });
+    T.itemsOf(p).forEach(function (x) {
+      if (typeof x === 'object') rows.push({ kind: 'part', name: x.name, en: x.en, easy: x.easy || p.name + ' 안의 하나', al: [], href: 'part.html?p=' + p.id + '&i=' + x.id, where: p.name });
+    });
+  });
+  rows.forEach(function (r) { r.key = norm([r.name, r.en, r.easy, r.al.join(' ')].join(' ')); r.init = initial(r.name); });
+  rows.sort(function (a, b) { return a.name.localeCompare(b.name, 'ko'); });
+
+  var list = document.getElementById('list'), hint = document.getElementById('hint'), jump = document.getElementById('jump'), q = document.getElementById('q');
+
+  function entry(r) {
+    return '<div class="entry"><span class="nm"><a href="' + esc(r.href) + '">' + esc(r.name) + '</a>' +
+      (r.en ? '<small>' + esc(r.en) + '</small>' : '') + (r.kind === 'part' ? '<small>부품 · ' + esc(r.where) + '</small>' : '') + '</span>' +
+      '<span><span class="ez">' + esc(r.easy) + (r.guess ? ' <span class="badge guess">추정</span>' : '') + '</span>' +
+      (r.al.length ? '<br><span class="al">다른 말: ' + r.al.map(esc).join(' · ') + '</span>' : '') + '</span></div>';
+  }
+  function render() {
+    var v = norm(q.value);
+    var hit = v ? rows.filter(function (r) { return r.key.indexOf(v) >= 0; }) : rows;
+    // 다른 말을 그대로 쳤으면 넘겨줄 곳을 먼저 알린다
+    var res = T.resolve(q.value);
+    if (res && res.from) hint.innerHTML = '「' + esc(res.from) + '」 은 「' + esc(res.word.name) + '」 로 넘겨줘요 → <a href="term.html?t=' + res.word.id + '">' + esc(res.word.name) + ' 보기</a>';
+    else hint.textContent = v ? hit.length + '개 찾음' : '낱말 ' + T.WORDS.length + ' · 부품 이름 ' + (rows.length - T.WORDS.length) + ' · 다른 말 ' + T.ALIASES.length;
+    if (!hit.length) {
+      list.innerHTML = '<p class="empty-q">없는 말이에요. 다른 이름으로 쳐 보거나, 부품 칸에서 자리로 찾아보세요. <a class="chip" href="parts.html">부품 칸</a></p>';
+      jump.innerHTML = '';
+      S.carry();
+      return;
+    }
+    var by = {};
+    hit.forEach(function (r) { (by[r.init] = by[r.init] || []).push(r); });
+    var keys = Object.keys(by).sort(function (a, b) { return a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b, 'ko'); });
+    jump.innerHTML = keys.map(function (k) { return '<a href="#L' + encodeURIComponent(k) + '" data-k="' + esc(k) + '">' + esc(k === '#' ? '0~9 · A~Z' : k) + '</a>'; }).join('');
+    list.innerHTML = keys.map(function (k) {
+      return '<section class="letter" id="L' + encodeURIComponent(k) + '"><h2 class="brush">' + esc(k === '#' ? '0~9 · A~Z' : k) + '</h2>' + by[k].map(entry).join('') + '</section>';
+    }).join('');
+    S.carry();
+  }
+  // 첫소리 줄은 주소의 그림체 꼬리를 지키려고 굴리기만 한다
+  jump.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-k]');
+    if (!a) return;
+    e.preventDefault();
+    var t = document.getElementById('L' + encodeURIComponent(a.dataset.k));
+    if (t) t.scrollIntoView({ block: 'start' });
+  });
+  q.addEventListener('input', render);
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var res = T.resolve(q.value);
+    if (res) location.href = 'term.html?t=' + res.word.id + '#' + S.current();
+  });
+  var start = S.param('q');
+  if (start) q.value = start;
+  S.init();
+  render();
+})();
+</script>
+</body>
+</html>

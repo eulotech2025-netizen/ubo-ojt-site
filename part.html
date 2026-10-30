@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>부품 — 신입 교재</title>
+<!--
+  부품 한 장 — part.html?p=blum-lift (분류) · part.html?p=blum-lift&i=hf (식구 하나).
+  위는 3D(모형이 있으면 model-viewer + 열림 막대, 없으면 준비 중 자리), 아래는 안에 든 것 · 같은 식구 · 같은 자리의 다른 부품 · 나오는 말.
+  내용은 terms-data.js. 모형은 3d/*.glb — 움직임의 앞 openSeconds 초가 「여는 동안」 이라 막대 0~100% 를 거기에 맞춘다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+  </div>
+  <nav class="tabs" aria-label="칸 셋">
+    <a href="index.html">처음</a><a href="learn.html">교재</a><a href="terms.html">용어</a><a href="parts.html" class="on">부품</a>
+  </nav>
+  <main id="main"></main>
+  <p class="foot">주소는 회사 안에서만 나눈다</p>
+</div>
+<script src="terms-data.js"></script>
+<script src="site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS, S = window.UBO_SITE, esc = S.esc;
+  var main = document.getElementById('main');
+  var p = T.part(S.param('p'));
+  var it = p && S.param('i') ? T.item(p, S.param('i')) : null;
+  var ICON_3D = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M17 8 L25 12.5 L25 21.5 L17 26 L9 21.5 L9 12.5 Z"/><path d="M9 12.5 L17 17 L25 12.5 M17 17 V26"/></svg>';
+  var ICON_PHOTO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="9" width="24" height="17" rx="2"/><circle cx="16" cy="17.5" r="5"/><path d="M11 9 L13 5.5 H19 L21 9"/></svg>';
+
+  if (!p) {
+    main.innerHTML = '<p class="empty-q">없는 부품이에요. <a class="chip" href="parts.html">부품 목록으로</a></p>';
+    S.init();
+    return;
+  }
+  var g = T.group(p.g);
+  var model = it ? (it.model ? it : null) : T.modelItem(p);
+  document.title = (it ? T.label(it) : p.name) + ' — 부품 — 신입 교재';
+
+  function tilePart(x) {
+    var m = T.modelItem(x);
+    var pic = m ? '<span class="pic has3d"><span class="badge m3">3D</span>' + ICON_3D + '</span>'
+      : x.moves ? '<span class="pic"><span class="badge">3D 준비 중</span>' + ICON_3D + '</span>'
+      : '<span class="pic"><span class="badge">사진 준비 중</span>' + ICON_PHOTO + '</span>';
+    return '<a class="tile" href="part.html?p=' + x.id + '">' + pic + '<span class="tx"><span class="nm">' + esc(x.name) + '</span><span class="ez">' + esc(x.easy) + (x.guess ? ' <span class="badge guess">추정</span>' : '') + '</span></span></a>';
+  }
+  function tileItem(x) {
+    var pic = x.model ? '<span class="pic has3d"><span class="badge m3">3D</span>' + ICON_3D + '</span>' : '<span class="pic"><span class="badge">3D 준비 중</span>' + ICON_3D + '</span>';
+    return '<a class="tile" href="part.html?p=' + p.id + '&amp;i=' + x.id + '">' + pic + '<span class="tx"><span class="nm">' + esc(T.label(x)) + '</span>' + (x.note ? '<span class="ez">' + esc(x.note) + '</span>' : '') + '</span></a>';
+  }
+  function chipItem(x) {
+    if (typeof x === 'string') return '<span class="chip">' + esc(x) + '</span>';
+    return '<a class="chip" href="part.html?p=' + p.id + '&amp;i=' + x.id + '">' + esc(T.label(x)) + (x.note ? ' · ' + esc(x.note) : '') + (x.model ? ' <span class="badge m3">3D</span>' : '') + '</a>';
+  }
+
+  // 위 — 3D 자리
+  var stage;
+  if (model) {
+    var R = model.radius || 'auto';   // 카메라 거리 — 작은 부품은 적어 둔 거리로 다가간다
+    stage = '<div class="stage"><model-viewer id="mv" src="' + esc(model.model) + '" alt="' + esc(T.label(model) + ' — ' + (model.easy || '')) + '" camera-controls touch-action="pan-y" interaction-prompt="none" shadow-intensity="0.7" exposure="1.05" environment-image="neutral" camera-orbit="35deg 72deg ' + R + '" camera-target="' + esc(model.target || '0m 0.45m 0m') + '"></model-viewer></div>' +
+      '<div class="ctl"><label for="open">열림</label><input type="range" id="open" min="0" max="100" value="0" step="1"><output id="openOut" for="open">0%</output></div>' +
+      '<div class="views" id="views"><button type="button" data-orbit="35deg 72deg ' + R + '" class="on">비스듬히</button><button type="button" data-orbit="0deg 80deg ' + R + '">앞에서</button><button type="button" data-orbit="90deg 85deg ' + R + '">옆에서</button><button type="button" id="play">저절로 움직이기</button></div>' +
+      (!it ? '<p class="note">이 묶음의 ' + esc(T.label(model)) + ' 모형이다. <a class="chip" href="part.html?p=' + p.id + '&amp;i=' + model.id + '">' + esc(T.label(model)) + ' 한 장으로</a></p>' : '') +
+      (model.modelNote ? '<p class="note">' + esc(model.modelNote) + '</p>' : '');
+  } else if (p.moves) {
+    stage = '<div class="stage"><div class="empty"><div><b>3D 준비 중</b>움직이는 부품이라 3D로 만든다. 모형은 회사 확인을 받은 뒤 올린다.</div></div></div>';
+  } else {
+    stage = '<div class="stage"><div class="empty"><div><b>사진 준비 중</b>움직이지 않는 부품이라 사진으로 보여 준다.</div></div></div>';
+  }
+
+  // 이름 · 쉬운 말
+  var crumb = '<nav class="crumb" aria-label="자리"><a href="parts.html">부품</a><span>›</span><span>' + T.NUM[g.no] + ' ' + esc(g.name) + '</span><span>›</span>' +
+    (it ? '<a href="part.html?p=' + p.id + '">' + esc(p.name) + '</a><span>›</span><span>' + esc(T.label(it)) + '</span>' : '<span>' + esc(p.name) + '</span>') + '</nav>';
+  var head;
+  if (it) {
+    head = '<header class="head"><h1 class="brush">' + esc(it.name) + (it.en ? '(' + esc(it.en) + ')' : '') + '</h1>' +
+      '<span class="en">' + esc(p.name) + (it.note ? ' · ' + esc(it.note) : '') + (it.confirmed ? ' · <span class="badge ok">회사 확인 ' + esc(it.confirmed) + '</span>' : '') + '</span>' +
+      '<p class="ez">' + esc(it.easy || p.easy) + ((it.guess || (!it.easy && p.guess)) ? ' <span class="badge guess">추정</span>' : '') + '</p></header>';
+  } else {
+    head = '<header class="head"><h1 class="brush">' + esc(p.name) + '</h1>' +
+      '<span class="en">' + T.NUM[g.no] + ' ' + esc(g.name) + (p.tag ? ' · <span class="badge ' + p.tag + '">' + esc(p.brand) + '</span>' : '') + '</span>' +
+      '<p class="ez">' + esc(p.easy) + (p.guess ? ' <span class="badge guess">추정</span>' : '') + '</p></header>';
+  }
+
+  // 아래 — 안에 든 것 / 같은 식구
+  var parts = [];
+  var own = T.itemsOf(p).filter(function (x) { return typeof x === 'object'; });
+  if (it) {
+    var sib = own.filter(function (x) { return x.id !== it.id; });
+    if (sib.length) parts.push('<section class="sec"><h2 class="brush">같은 식구</h2><p class="w">' + esc(p.name) + ' 안의 다른 것. 누르면 그 한 장으로</p><div class="strip">' + sib.map(tileItem).join('') + '</div></section>');
+  } else if (own.length) {
+    parts.push('<section class="sec"><h2 class="brush">식구</h2><p class="w">누르면 그 한 장으로. 3D가 있는 것은 돌려 볼 수 있다</p><div class="strip">' + own.map(tileItem).join('') + '</div></section>');
+  }
+  if (!it) {
+    var body;
+    if (p.sets) body = p.sets.map(function (s) { return (s[0] ? '<span class="set">' + esc(s[0]) + '</span>' : '<span class="set"></span>') + s[1].map(chipItem).join(''); }).join('');
+    else body = T.itemsOf(p).length ? T.itemsOf(p).map(chipItem).join('') : '<span class="chip">따로 나뉜 것 없음</span>';
+    parts.push('<section class="sec"><h2 class="brush">안에 든 것</h2><p class="w">쇼핑몰 분류 안의 이름 그대로</p><div class="chips">' + body + '</div></section>');
+  }
+  // 같은 자리의 다른 부품
+  var near = T.PARTS.filter(function (x) { return x.g === p.g && x.id !== p.id; });
+  if (near.length) parts.push('<section class="sec"><h2 class="brush">관련 부품</h2><p class="w">' + T.NUM[g.no] + ' ' + esc(g.name) + ' 자리의 다른 부품</p><div class="strip">' + near.map(tilePart).join('') + '</div></section>');
+  // 이 부품에 나오는 말
+  var words = T.WORDS.filter(function (w) { return (w.from || []).indexOf(p.id) >= 0 || (w.part || []).indexOf(p.id) >= 0; });
+  if (words.length) parts.push('<section class="sec"><h2 class="brush">나오는 말</h2><p class="w">누르면 용어 칸의 그 낱말로</p><div class="chips">' + words.map(function (w) { return '<a class="chip" href="term.html?t=' + w.id + '">' + esc(w.name) + '</a>'; }).join('') + '</div></section>');
+
+  main.innerHTML = crumb + stage + head + parts.join('');
+
+  // 3D — 열림 막대는 움직임의 앞부분(여는 동안)을 짚는다
+  if (model) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js';
+    document.head.appendChild(s);
+    var mv = document.getElementById('mv'), range = document.getElementById('open'), out = document.getElementById('openOut'), play = document.getElementById('play');
+    var openSeconds = model.openSeconds || 1;
+    var seek = function () {
+      out.value = range.value + '%';
+      out.textContent = range.value + '%';
+      mv.currentTime = (range.value / 100) * openSeconds;
+    };
+    // 한 번도 틀지 않으면 움직임이 붙지 않아(길이 0초) 시간을 옮겨도 그대로다.
+    // 한 번 틀고, 길이가 잡히면 멈춘 뒤 옮긴다 — 불러온 직후에는 아직 0초다
+    var armed = false;
+    var arm = function (done) {
+      if (armed) return done();
+      mv.play();
+      var tries = 0;
+      (function wait() {
+        if (mv.duration > 0 || tries++ > 180) { mv.pause(); armed = true; done(); }
+        else requestAnimationFrame(wait);
+      })();
+    };
+    mv.addEventListener('load', function () { arm(seek); });
+    range.addEventListener('input', function () {
+      if (!mv.paused) { mv.pause(); play.textContent = '저절로 움직이기'; play.classList.remove('on'); }
+      arm(seek);
+    });
+    play.addEventListener('click', function () {
+      if (mv.paused) { mv.play(); play.textContent = '멈춤'; play.classList.add('on'); }
+      else { mv.pause(); play.textContent = '저절로 움직이기'; play.classList.remove('on'); }
+    });
+    document.getElementById('views').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-orbit]');
+      if (!b) return;
+      mv.cameraOrbit = b.dataset.orbit;
+      Array.prototype.forEach.call(this.querySelectorAll('[data-orbit]'), function (o) { o.classList.toggle('on', o === b); });
+    });
+  }
+  S.init();
+})();
+</script>
+</body>
+</html>

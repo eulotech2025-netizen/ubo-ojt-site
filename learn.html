@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>교재 — 신입 교재</title>
+<!-- 교재 칸 시작 페이지 — 갈 곳 셋을 번호 줄로. 1 처음 읽기(textbook.html) · 2 일을 받았을 때(jobs.html) · 3 이카운트 누르는 법(ecount.html). 처음이면 1번부터 (시안 A, 사용자 10-30). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper: #ffffff; --card: #ffffff; --ink: #1f2937; --soft: #4b5563; --faint: #9aa1ad; --line: #e5e7eb; --find: #1f5fae; --db: #2f7d4f; --talk: #b8432f; --marker: rgba(31, 95, 174, 0.12); --r: 14px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--paper); }
+  body { min-height: 100vh; color: var(--ink); font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 16px; line-height: 1.5; letter-spacing: -0.01em; background: var(--paper); padding: 18px 16px 40px; word-break: keep-all; overflow-wrap: anywhere; }
+  .page { max-width: 720px; margin: 0 auto; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+  .pick { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; font-family: system-ui, sans-serif; }
+  .pick button { font-size: 13px; border: 1px solid #c9ced6; background: #fff; border-radius: 999px; padding: 5px 12px; }
+  .pick button.on { background: #1f2937; border-color: #1f2937; color: #fff; }
+  .pick a { font-size: 13px; color: var(--soft); align-self: center; margin-left: 8px; }
+  .hero { text-align: center; }
+  .hero .kick { font-size: 14px; color: var(--soft); }
+  .hero h1 { font-size: clamp(30px, 5vw, 40px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-top: 2px; }
+  .hero p { font-size: 16px; color: var(--soft); margin-top: 6px; }
+  .foot { margin-top: 28px; text-align: center; font-size: 13px; color: var(--faint); }
+  a:focus-visible, button:focus-visible { outline: 2px dashed var(--find); outline-offset: 3px; }
+  .rows { display: grid; gap: 12px; margin-top: 26px; }
+  .row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 18px; border: 1.5px solid var(--line); border-radius: var(--r); background: var(--card); }
+  .row .no { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 18px; border: 2px solid var(--ink); }
+  .row.first { border-color: var(--find); border-width: 2px; }
+  .row.first .no { background: var(--find); border-color: var(--find); color: #fff; }
+  .row .t { display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+  .row .w { display: block; font-size: 15px; color: var(--soft); margin-top: 2px; }
+  .row .go { color: var(--find); font-weight: 700; font-size: 20px; }
+  .row:hover { background: var(--marker); }
+  .warn { margin-top: 16px; padding: 8px 12px; border-left: 3px solid var(--talk); font-size: 14.5px; color: var(--soft); }
+  .warn b { color: var(--talk); }
+  html[data-style="pencil"] .row .t { font-size: 25px; }
+  html[data-style="pencil"] { --paper: #f8f4ea; --card: #fffdf7; --ink: #36332d; --soft: #5d584e; --faint: #8b8476; --line: rgba(139, 132, 118, 0.45); --find: #2f5d87; --db: #4f7d4a; --talk: #b5523b; --marker: rgba(255, 214, 64, 0.55); --r: 8px; }
+  html[data-style="pencil"] body { font-family: 'Gaegu', cursive; font-size: 19px; letter-spacing: 0; }
+  html[data-style="pencil"] .hero h1, html[data-style="pencil"] .big { font-family: 'Nanum Brush Script', 'Gaegu', cursive; font-weight: 400; letter-spacing: 0; }
+  html[data-style="pencil"] .hero h1 { font-size: clamp(44px, 7vw, 58px); }
+  html[data-style="blueprint"] { --paper: #f6f8fb; --card: #ffffff; --ink: #16365c; --soft: #3d5878; --faint: #9db0c6; --line: rgba(29, 111, 184, 0.25); --find: #1d6fb8; --db: #2b7a5a; --talk: #c23b2e; --marker: rgba(29, 111, 184, 0.13); --r: 0px; }
+  html[data-style="blueprint"] body { font-family: 'IBM Plex Sans KR', system-ui, sans-serif; font-size: 15px;
+    background-image: linear-gradient(rgba(29, 111, 184, 0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(29, 111, 184, 0.10) 1px, transparent 1px), linear-gradient(rgba(29, 111, 184, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(29, 111, 184, 0.045) 1px, transparent 1px);
+    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px; }
+  html[data-style="blueprint"] .hero h1 { font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+    <a href="index.html">← 처음</a>
+  </div>
+  <header class="hero">
+    <div class="kick">신입 교재 · 교재</div>
+    <h1>교재</h1>
+    <p>처음이면 1번부터 읽는다.</p>
+  </header>
+  <nav class="rows" aria-label="교재 세 갈래">
+    <a class="row first" href="textbook.html"><span class="no">1</span><span><span class="t big">처음 읽기</span><span class="w">회사 일이 도는 순서. 0장부터 9장까지</span></span><span class="go" aria-hidden="true">→</span></a>
+    <a class="row" href="jobs.html"><span class="no">2</span><span><span class="t big">일을 받았을 때</span><span class="w">「반품할게요」 같은 말을 듣고 할 일을 찾는다</span></span><span class="go" aria-hidden="true">→</span></a>
+    <a class="row" href="ecount.html"><span class="no">3</span><span><span class="t big">이카운트 누르는 법</span><span class="w">어느 화면에서 무엇을 누르나</span></span><span class="go" aria-hidden="true">→</span></a>
+  </nav>
+  <p class="warn"><b>연습은</b> 회사가 정한 연습 거래처 · 품목으로만 한다. 실제 거래처 이름 · 금액 · 계정 정보는 적지 않는다.</p>
+  <p class="foot">(추정) = 실무자 확인 전 · 주소는 회사 안에서만 나눈다</p>
+</div>
+<script>
+(function () {
+  'use strict';
+  // 그림체 — 주소 끝 #pencil · #textbook · #blueprint (기본 교과서), 쪽 사이 링크에도 붙여 넘긴다
+  function use(s) {
+    if (['pencil', 'textbook', 'blueprint'].indexOf(s) < 0) s = 'textbook';
+    document.documentElement.dataset.style = s;
+    Array.prototype.forEach.call(document.querySelectorAll('#pick button'), function (b) { b.classList.toggle('on', b.dataset.s === s); });
+    Array.prototype.forEach.call(document.querySelectorAll('a[href]'), function (a) {
+      var h = a.getAttribute('href');
+      if (/\.html(#|$)/.test(h)) a.setAttribute('href', h.split('#')[0] + '#' + s);
+    });
+  }
+  document.getElementById('pick').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-s]');
+    if (b) { use(b.dataset.s); if (history.replaceState) history.replaceState(null, '', '#' + b.dataset.s); }
+  });
+  function fromHash() { use((location.hash || '').slice(1)); }
+  fromHash();
+  window.addEventListener('hashchange', fromHash);
+})();
+</script>
+</body>
+</html>

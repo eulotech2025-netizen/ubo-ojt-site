@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>3D 부품 확인표 — 신입 교재</title>
+<!--
+  회사 확인표 (사용자 11-03 「회사 확인 시트가 필요함」) — 회의에서 인쇄해 쓰는 쪽. 내용은 전부 terms-data.js 에서 뽑는다:
+  모형마다 한 줄(그림 · 이름 · 무엇을 그렸나 · 모양 · 움직임 · 고칠 점), 그리고 정할 값(색 예시 · 서랍 레일 · 경첩 · HF 리프트 규칙).
+  모형이나 규칙이 바뀌면 이 쪽도 따라 바뀐다. 받은 답은 terms-data.js 에 옮기고 guess · 「추정」 을 지운다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 11mm 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', system-ui, sans-serif; color: #1f2937; background: #fff; font-size: 12.5px; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
+  .page { max-width: 1000px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: grid; grid-template-columns: 1fr auto; gap: 6px 20px; align-items: end; border-bottom: 2px solid #1f2937; padding-bottom: 10px; }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .meta { font-size: 12.5px; display: grid; gap: 4px; text-align: right; }
+  .meta span { display: inline-block; min-width: 9em; border-bottom: 1px solid #9ca3af; text-align: left; }
+  .how { margin-top: 10px; font-size: 13px; display: grid; gap: 3px; }
+  .how b { font-weight: 700; }
+  .sum { margin-top: 8px; font-size: 12.5px; color: #4b5563; }
+  .tools { margin-top: 10px; display: flex; gap: 8px; }
+  .tools button { font: inherit; font-size: 13px; border: 1px solid #1f5fae; color: #1f5fae; background: #fff; border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+  h2 { font-size: 15.5px; font-weight: 800; margin: 22px 0 6px; letter-spacing: -0.01em; }
+  h2 small { font-size: 12px; font-weight: 400; color: #4b5563; margin-left: 6px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th { font-size: 11.5px; font-weight: 700; color: #4b5563; text-align: left; padding: 5px 6px; border-bottom: 1.5px solid #1f2937; background: #f3f4f6; }
+  td { padding: 5px 6px; border-bottom: 1px solid #d1d5db; vertical-align: middle; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  .g td { background: #eef2f7; font-weight: 800; font-size: 13px; padding: 6px; border-bottom: 1px solid #9ca3af; }
+  .no { width: 30px; text-align: right; color: #6b7280; font-variant-numeric: tabular-nums; }
+  .pic { width: 86px; }
+  .pic img { display: block; width: 80px; height: 60px; object-fit: contain; background: #eef3fa; border-radius: 4px; }
+  .nm b { display: block; font-size: 13px; }
+  .nm span { display: block; color: #4b5563; font-size: 11.5px; line-height: 1.4; }
+  .ck { width: 92px; font-size: 12px; white-space: nowrap; }
+  .ck i { display: inline-block; width: 11px; height: 11px; border: 1.3px solid #1f2937; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
+  .ck.no-move { color: #9ca3af; }
+  .memo { width: 26%; }
+  .ok { font-size: 11px; font-weight: 700; color: #2f7d4f; border: 1px solid #2f7d4f; border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+  .val { font-size: 12px; }
+  .val ul { padding-left: 1.1em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 3px 8px; }
+  .chips span { white-space: nowrap; }
+  .chips i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,.25); vertical-align: -1px; margin-right: 3px; }
+  footer { margin-top: 18px; font-size: 11.5px; color: #6b7280; }
+  @media print {
+    .tools { display: none; }
+    .page { padding: 0; max-width: none; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>3D 부품 확인표</h1>
+      <p class="sum" id="sum"></p>
+    </div>
+    <div class="meta">
+      <div>확인한 날 <span>&nbsp;</span></div>
+      <div>확인한 사람 <span>&nbsp;</span></div>
+    </div>
+  </header>
+  <div class="how">
+    <div><b>1.</b> 화면에서 부품마다 3D 를 돌려 보고, 움직이는 것은 열림 막대를 밀어 본다.</div>
+    <div><b>2.</b> 실제 제품과 <b>모양</b> · <b>움직임</b>이 맞으면 「맞음」, 다르면 「고침」 에 표시하고 고칠 점을 짧게 적는다.</div>
+    <div><b>3.</b> 뒤쪽 <b>정할 값</b>(색 · 레일 · 경첩 · 리프트 규칙)은 지금 적힌 값이 맞는지 본다. 모형은 단순하게 만든 것이라 크기 · 세부 모양보다 「무엇이 어떻게 움직이나」 를 본다.</div>
+  </div>
+  <div class="tools"><button type="button" onclick="window.print()">인쇄 · PDF 로 저장</button></div>
+
+  <h2>모형 <small>번호는 부품 칸 자리 ①~⑩ 순서</small></h2>
+  <table>
+    <thead><tr><th class="no">#</th><th class="pic">그림</th><th>부품 · 무엇을 그렸나</th><th class="ck">모양</th><th class="ck">움직임</th><th class="memo">고칠 점</th></tr></thead>
+    <tbody id="models"></tbody>
+  </table>
+
+  <h2>정할 값 <small>계산 · 고르기에 쓰는 값 — 지금은 흔한 기준으로 채운 짐작</small></h2>
+  <table>
+    <thead><tr><th style="width:18%">무엇</th><th>지금 적힌 값</th><th class="ck">맞나</th><th class="memo">고칠 점</th></tr></thead>
+    <tbody id="rules"></tbody>
+  </table>
+
+  <footer>신입 교재 · 부품 칸에서 뽑은 표 — 모형이나 값이 바뀌면 이 표도 같이 바뀐다. 확인받은 것은 화면의 「추정」 표시를 지운다.</footer>
+</div>
+<script src="terms-data.js?v=20261103c"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS;
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var THUMB_V = 1;
+  var thumb = function (m) { return m.model.split('?')[0].replace(/^3d\//, '3d/thumbs/').replace(/\.glb$/, '.webp') + '?v=' + THUMB_V; };
+  var BOX = '<i></i>';
+  var first = function (note) {   // 「무엇을 그렸나」 는 안내의 앞 두 문장만 — 꼬리(단순하게 만든 …)는 뺀다
+    var s = String(note || '').replace(/\s*(움직임은 회사 확인 전이다\.\s*)?단순하게 만든 모형이라.*$/, '');
+    var parts = s.split(/(?<=다\.)\s+/);
+    return parts.slice(0, 2).join(' ');
+  };
+
+  // 모형 줄 — 분류 대표 모형 + 식구 모형(같은 모형 파일은 한 줄로)
+  var rows = [], seen = {}, n = 0, moving = 0, ok = 0;
+  T.GROUPS.forEach(function (g) {
+    rows.push('<tr class="g"><td colspan="6">' + T.NUM[g.no] + ' ' + esc(g.name) + '</td></tr>');
+    T.PARTS.filter(function (p) { return p.g === g.no; }).forEach(function (p) {
+      var list = [];
+      T.itemsOf(p).forEach(function (x) { if (typeof x === 'object' && x.model) list.push({ m: x, label: p.name + ' › ' + T.label(x) }); });
+      if (p.model) list.push({ m: p, label: p.name });
+      list.forEach(function (o) {
+        var file = o.m.model.split('?')[0];
+        if (seen[file]) { seen[file].names.push(o.label.replace(p.name + ' › ', '')); return; }
+        var row = { m: o.m, label: o.label, names: [] };
+        seen[file] = row;
+        rows.push(row);
+      });
+    });
+  });
+  // 우리 쇼핑몰에 없는 블럼 묶음 — 3D 가 있는 것만 (사용자 11-03)
+  var blum = T.BLUM.filter(function (b) { return b.model; });
+  if (blum.length) {
+    rows.push('<tr class="g"><td colspan="6">블럼 대응 — 우리 쇼핑몰에 없는 블럼 묶음</td></tr>');
+    blum.forEach(function (b) { rows.push({ m: b, label: b.name, names: [] }); });
+  }
+  var html = rows.map(function (r) {
+    if (typeof r === 'string') return r;
+    n++;
+    var m = r.m, moves = !!m.openSeconds;
+    if (moves) moving++;
+    var done = !!m.confirmed;
+    if (done) ok++;
+    var name = esc(r.label) + (r.names.length ? ' · ' + esc(r.names.join(' · ')) : '');
+    var what = first(m.modelNote) || esc(m.easy || '');
+    return '<tr><td class="no">' + n + '</td><td class="pic"><img src="' + thumb(m) + '" alt=""></td>' +
+      '<td class="nm"><b>' + name + (done ? ' <span class="ok">확인 ' + esc(m.confirmed) + '</span>' : '') + '</b><span>' + esc(what) + '</span></td>' +
+      '<td class="ck">' + BOX + '맞음 ' + BOX + '고침</td>' +
+      (moves ? '<td class="ck">' + BOX + '맞음 ' + BOX + '고침</td>' : '<td class="ck no-move">움직임 없음</td>') +
+      '<td class="memo"></td></tr>';
+  }).join('');
+  document.getElementById('models').innerHTML = html;
+
+  // 정할 값 — 색 예시 · 서랍 레일 · 경첩 · HF 리프트
+  var anyPart = T.PARTS[0];
+  var rule = function (what, val) { return '<tr><td><b>' + what + '</b></td><td class="val">' + val + '</td><td class="ck">' + BOX + '맞음 ' + BOX + '고침</td><td class="memo"></td></tr>'; };
+  var out = [];
+  (anyPart.paint || []).forEach(function (gp) {
+    out.push(rule(esc(gp.name) + ' <small>(예시)</small>', '<div class="chips">' + gp.colors.map(function (c) { return '<span><i style="background:' + c.hex + '"></i>' + esc(c.name) + '</span>'; }).join('') + '</div>실제 파는 색 · 마감 이름으로 바꿀 것'));
+  });
+  var rail = T.PARTS.filter(function (p) { return p.fit && p.fit.type === 'rail'; })[0];
+  if (rail) {
+    var f = rail.fit;
+    out.push(rule('서랍 레일 길이', '<ul><li>표준 길이 ' + f.lengths.join(' · ') + 'mm</li><li>장 안쪽 깊이에서 ' + f.margin + 'mm 를 빼고 들어가는 가장 긴 레일</li><li>서랍 통 길이 — 언더레일은 레일보다 10mm 짧게, 볼레일은 레일과 같게</li></ul>'));
+  }
+  var hinge = T.PARTS.filter(function (p) { return p.fit && p.fit.type === 'hinge'; })[0];
+  if (hinge) {
+    var h = hinge.fit;
+    out.push(rule('경첩 개수', '<ul><li>문 높이 ' + h.counts.map(function (c) { return c.upTo.toLocaleString('ko-KR') + 'mm까지 ' + c.n + '개'; }).join(' · ') + '</li><li>무거운 문(유리 · 거울 · 두꺼운 문)은 하나 더</li><li>위 · 아래 끝에서 약 100mm 안쪽에 단다</li></ul>'));
+    out.push(rule('경첩 종류 이름', '<ul>' + h.cover.map(function (c) { return '<li>' + esc(c.kind) + ' = ' + esc(c.name) + ' — ' + esc(c.easy) + '</li>'; }).join('') + '</ul>'));
+  }
+  var lift = T.part('blum-lift'), hf = lift && T.item(lift, 'hf');
+  if (hf && hf.pick) {
+    var pk = hf.pick;
+    out.push(rule('리프트 HF 강도', '<ul><li>힘 숫자 = 장 높이(mm) × 문 두 쪽 무게(kg, 손잡이 포함)</li><li>' + pk.power.map(function (x) { return x.id + ' ' + x.min.toLocaleString('ko-KR') + '~' + x.max.toLocaleString('ko-KR'); }).join(' · ') + '</li><li>장 높이 ' + pk.h[0] + '~' + pk.h[1] + 'mm · 너비 ' + pk.w[0] + '~' + pk.w[1] + 'mm</li></ul>'));
+    out.push(rule('문 재질 무게 (HF 계산용)', '<ul>' + pk.mat.map(function (x) { return '<li>' + esc(x.name) + ' — 1㎡에 ' + x.kgm2 + 'kg</li>'; }).join('') + '<li>손잡이 ' + pk.handle[0].kg + 'kg</li></ul>'));
+    out.push(rule('리프트 덮개 색 (블럼 마감)', '<div class="chips">' + pk.cap.map(function (c) { return '<span><i style="background:' + c.hex + '"></i>' + esc(c.name) + '</span>'; }).join('') + '</div>'));
+  }
+  document.getElementById('rules').innerHTML = out.join('');
+  document.getElementById('sum').textContent = '모형 ' + n + '개 (움직이는 것 ' + moving + '개) · 이미 확인받은 것 ' + ok + '개 · 정할 값 ' + out.length + '개';
+})();
+</script>
+</body>
+</html>

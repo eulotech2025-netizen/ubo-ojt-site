@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ko" data-style="textbook">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>부품 — 신입 교재</title>
+<!--
+  부품 한 장 — part.html?p=blum-lift (분류) · part.html?p=blum-lift&i=hf (식구 하나).
+  위는 3D(모형이 있으면 model-viewer + 열림 막대, 없으면 준비 중 자리), 아래는 안에 든 것 · 같은 식구 · 같은 자리의 다른 부품 · 나오는 말.
+  내용은 terms-data.js. 모형은 3d/*.glb — 움직임의 앞 openSeconds 초가 「여는 동안」 이라 막대 0~100% 를 거기에 맞춘다.
+  식구에 pick 이 있으면(HF) 고르기 판 — 왼쪽 3D, 오른쪽에 이름 · 장 크기 · 문 · 색 · 맞는 강도 (사용자 11-02 A안).
+  고른 값은 주소(&h=&w=&mat= …)에 남아 그 주소를 보내면 같은 장으로 열린다. 모형은 pick.heights 가운데 가까운 높이를 불러
+  남은 차이를 높이 · 깊이 같은 배율로(문이 도는 면이라 움직임이 찌그러지지 않는다), 너비는 따로 늘린다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Brush+Script&family=Noto+Sans+KR:wght@400;500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  /* 고르기 판 — 부품팀 것이라 site.css(용어팀) 대신 여기에 둔다 */
+  .pk { display: grid; gap: 18px 22px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .pk-left { position: sticky; top: 10px; }
+  @media (max-width: 820px) { .pk { grid-template-columns: minmax(0, 1fr); } .pk-left { position: static; } }
+  .pk .stage model-viewer { height: 460px; }
+  @media (max-width: 560px) { .pk .stage model-viewer { height: 320px; } }
+  /* PC — 넓은 화면은 쪽 폭을 넓히고 3D 를 화면 높이에 맞춰 크게, 오른쪽 판은 너비를 고정 (사용자 11-03 「pc버전으로」) */
+  @media (min-width: 1200px) {
+    .page { max-width: 1480px; }
+    .pk { grid-template-columns: minmax(0, 1fr) 420px; gap: 22px 40px; }
+    .pk .stage model-viewer { height: clamp(520px, calc(100vh - 260px), 800px); }
+    .strip { grid-auto-columns: minmax(200px, 232px); }
+  }
+  @media (min-width: 1600px) { .pk { grid-template-columns: minmax(0, 1fr) 460px; } }
+  .pk .head { margin-top: 0; }
+  .tile .pic .th { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; }   /* 썸네일이 아이콘을 덮는다, 없으면 아이콘이 보인다 */
+  .tile .pic .badge { z-index: 1; }
+  .tile .pic:has(.th) svg { visibility: hidden; }   /* 그림이 투명 바탕이라 뒤 아이콘이 비친다 — 그림이 있으면 아이콘을 숨긴다 */
+  .tile .pic.faint .th { opacity: 0.45; }
+  .dim { position: absolute; left: 10px; top: 10px; font-size: 12.5px; font-weight: 700; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .pk-guess { font-size: 13px; color: var(--ink-soft); border: 1px dashed var(--talk); border-radius: var(--r); padding: 7px 11px; margin: 12px 0 4px; }
+  .grp { border-top: 1px solid var(--line); padding: 14px 0 6px; }
+  .grp h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .grp h3 small { font-weight: 400; color: var(--ink-soft); font-size: 13px; }
+  .sl { display: grid; grid-template-columns: minmax(2.6em, auto) minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 14px; }
+  .sl input[type=range] { width: 100%; accent-color: var(--find); }
+  .num { display: inline-flex; align-items: center; gap: 4px; font-size: 13.5px; color: var(--ink-soft); }
+  .num input { width: 5.4em; padding: 4px 6px; border: 1px solid #c9ced6; border-radius: 6px; background: #fff; color: var(--ink); font-size: 14px; text-align: right; font-variant-numeric: tabular-nums; }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opts + .opts { margin-top: 8px; }
+  .opt { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 14px; background: var(--card); }
+  .opt.on { border-color: var(--find); color: var(--find); background: var(--marker); font-weight: 700; }
+  .sw { display: flex; flex-wrap: wrap; gap: 6px 4px; }
+  .sw button { display: grid; justify-items: center; gap: 4px; font-size: 12.5px; color: var(--ink-soft); width: 72px; line-height: 1.25; }
+  .sw button i { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.18); box-shadow: 0 0 0 3px #fff, 0 0 0 4px transparent; }
+  .sw button.on { color: var(--ink); font-weight: 700; }
+  .sw button.on i { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--find); }
+  .kg { font-size: 13.5px; color: var(--ink-soft); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .kg b { color: var(--ink); }
+  .res { margin-top: 14px; border: 1.5px solid var(--find); border-radius: var(--r); padding: 14px 16px; background: var(--marker); }
+  .res.warn { border-color: var(--talk); background: rgba(184, 67, 47, 0.06); }
+  .res .k { font-size: 13px; color: var(--ink-soft); }
+  .res .v { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: var(--find); }
+  .res.warn .v { color: var(--talk); font-size: 19px; }
+  .res .why { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .res ul { margin-top: 10px; font-size: 14px; display: grid; gap: 3px; }
+  .res li::before { content: '· '; color: var(--ink-faint); }
+  .rul { margin-top: 12px; display: grid; gap: 5px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .rul-row { display: grid; grid-template-columns: 3.6em minmax(0, 1fr); gap: 8px; align-items: center; }
+  .rul-row .trk { position: relative; height: 10px; background: rgba(0, 0, 0, 0.05); border-radius: 5px; }
+  .rul-row .trk b { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: #c9d6e8; }
+  .rul-row.fit .trk b { background: var(--find); }
+  .rul-row.fit span { color: var(--find); font-weight: 700; }
+  .rul-row .trk i { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--talk); }
+  .rul-cap { font-size: 12px; color: var(--ink-faint); display: flex; justify-content: space-between; padding-left: calc(3.6em + 8px); }
+  /* 맞는 규격 찾기 — 표준 길이 줄 */
+  .lens { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .lens span { font-size: 12.5px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--ink-soft); background: var(--card); }
+  .lens span.no { color: var(--ink-faint); text-decoration: line-through; }
+  .lens span.on { background: var(--find); border-color: var(--find); color: #fff; font-weight: 700; }
+  .sw button.base i { background-image: linear-gradient(135deg, transparent 46%, rgba(0, 0, 0, 0.35) 46%, rgba(0, 0, 0, 0.35) 54%, transparent 54%); }
+  .opt small { font-weight: 400; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pick" id="pick">
+    <button type="button" data-s="pencil">연필 손그림</button>
+    <button type="button" data-s="textbook">교과서 도식</button>
+    <button type="button" data-s="blueprint">설계 도면</button>
+  </div>
+  <nav class="tabs" aria-label="칸 셋">
+    <a href="index.html">처음</a><a href="learn.html">교재</a><a href="terms.html">용어</a><a href="parts.html" class="on">부품</a>
+  </nav>
+  <main id="main"></main>
+  <p class="foot">주소는 회사 안에서만 나눈다</p>
+</div>
+<script src="terms-data.js?v=20261103c"></script>
+<script src="site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.UBO_TERMS, S = window.UBO_SITE, esc = S.esc;
+  var main = document.getElementById('main');
+  // ?b=<id> 는 우리 쇼핑몰에 없는 블럼 묶음(BLUM 의 한 줄) — 부품 한 장과 같은 모양으로 보여 준다 (사용자 11-03)
+  var blumOf = function (id) { for (var i = 0; i < T.BLUM.length; i++) if (T.BLUM[i].id === id && T.BLUM[i].model) return T.BLUM[i]; return null; };
+  var p = S.param('b') ? blumOf(S.param('b')) : T.part(S.param('p'));
+  var it = p && !p.isBlum && S.param('i') ? T.item(p, S.param('i')) : null;
+  var ICON_3D = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M17 8 L25 12.5 L25 21.5 L17 26 L9 21.5 L9 12.5 Z"/><path d="M9 12.5 L17 17 L25 12.5 M17 17 V26"/></svg>';
+  var ICON_PHOTO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="9" width="24" height="17" rx="2"/><circle cx="16" cy="17.5" r="5"/><path d="M11 9 L13 5.5 H19 L21 9"/></svg>';
+
+  if (!p) {
+    main.innerHTML = '<p class="empty-q">없는 부품이에요. <a class="chip" href="parts.html">부품 목록으로</a></p>';
+    S.init();
+    return;
+  }
+  var g = T.group(p.g);
+  // 식구 칸에 모형이 없으면 분류의 대표 모형으로 보여 준다
+  var model = it ? (it.model ? it : (p.model ? p : null)) : T.modelItem(p);
+  var pick = it && it.pick ? it.pick : null;   // 고르기 판 — 있으면 모형은 고른 크기로 골라 부른다
+  document.title = (it ? T.label(it) : p.name) + ' — 부품 — 신입 교재';
+
+  // 썸네일 — 3d/build_thumbs.py 가 모형마다 그린 3d/thumbs/<모형 이름>.webp (parts.html 과 같다). 모형을 다시 그리면 THUMB_V 를 올린다
+  var THUMB_V = 1;
+  function thumb(m) {
+    var src = m.model.split('?')[0].replace(/^3d\//, '3d/thumbs/').replace(/\.glb$/, '.webp') + '?v=' + THUMB_V;
+    return '<img class="th" src="' + src + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">';
+  }
+  function tilePart(x) {
+    var m = T.modelItem(x);
+    var pic = m ? '<span class="pic has3d">' + ICON_3D + thumb(m) + '<span class="badge m3">3D</span></span>'
+      : x.moves ? '<span class="pic"><span class="badge">3D 준비 중</span>' + ICON_3D + '</span>'
+      : '<span class="pic"><span class="badge">사진 준비 중</span>' + ICON_PHOTO + '</span>';
+    return '<a class="tile" href="part.html?p=' + x.id + '">' + pic + '<span class="tx"><span class="nm">' + esc(x.name) + '</span><span class="ez">' + esc(x.easy) + (x.guess ? ' <span class="badge guess">추정</span>' : '') + '</span></span></a>';
+  }
+  function tileBlum(b) {
+    return '<a class="tile" href="part.html?b=' + b.id + '"><span class="pic has3d">' + ICON_3D + thumb(b) + '<span class="badge m3">3D</span></span>' +
+      '<span class="tx"><span class="nm">' + esc(b.name) + '</span><span class="ez">' + esc(b.easy) + '</span></span></a>';
+  }
+  function tileItem(x) {
+    // 식구에 모형이 없으면 묶음의 대표 모형 그림을 흐리게 — 눌러도 묶음 모형이 나온다
+    var pic = x.model ? '<span class="pic has3d">' + ICON_3D + thumb(x) + '<span class="badge m3">3D</span></span>'
+      : p.model ? '<span class="pic has3d faint">' + ICON_3D + thumb(p) + '<span class="badge">묶음 모형</span></span>'
+      : '<span class="pic"><span class="badge">3D 준비 중</span>' + ICON_3D + '</span>';
+    return '<a class="tile" href="part.html?p=' + p.id + '&amp;i=' + x.id + '">' + pic + '<span class="tx"><span class="nm">' + esc(T.label(x)) + '</span>' + (x.note ? '<span class="ez">' + esc(x.note) + '</span>' : '') + '</span></a>';
+  }
+  function chipItem(x) {
+    if (typeof x === 'string') return '<span class="chip">' + esc(x) + '</span>';
+    return '<a class="chip" href="part.html?p=' + p.id + '&amp;i=' + x.id + '">' + esc(T.label(x)) + (x.note ? ' · ' + esc(x.note) : '') + (x.model ? ' <span class="badge m3">3D</span>' : '') + '</a>';
+  }
+
+  // 위 — 3D 자리
+  var stage;
+  var moves = !!(model && model.openSeconds);   // 모형에 여닫는 움직임이 있나
+  if (model) {
+    var R = model.radius || 'auto';   // 카메라 거리 — 작은 부품은 적어 둔 거리로 다가간다
+    // 고르기 판이면 모형 주소 · 겨누는 곳은 고른 크기에 따라 바뀌어 JS 가 정한다
+    var mvAt = pick ? '' : ' src="' + esc(model.model) + '" camera-target="' + esc(model.target || '0m 0.45m 0m') + '"';
+    stage = '<div class="stage"><model-viewer id="mv"' + mvAt + ' alt="' + esc(T.label(model) + ' — ' + (model.easy || '')) + '" camera-controls touch-action="pan-y" interaction-prompt="none" shadow-intensity="0.7" exposure="1.05" environment-image="neutral" camera-orbit="35deg 72deg ' + R + '"></model-viewer>' + (pick ? '<span class="dim" id="dim"></span>' : '') + '</div>' +
+      // 움직임이 없는 모형(openSeconds 없음)은 열림 막대를 두지 않고, 단추는 「저절로 돌기」 — 막대를 밀어도 그대로라 고장처럼 보였다 (사용자 11-02)
+      (moves ? '<div class="ctl"><label for="open">열림</label><input type="range" id="open" min="0" max="100" value="0" step="1"><output id="openOut" for="open">0%</output></div>' : '') +
+      '<div class="views" id="views"><button type="button" data-orbit="35deg 72deg ' + R + '" class="on">비스듬히</button><button type="button" data-orbit="0deg 80deg ' + R + '">앞에서</button><button type="button" data-orbit="90deg 85deg ' + R + '">옆에서</button><button type="button" id="play">' + (moves ? '저절로 움직이기' : '저절로 돌기') + '</button></div>' +
+      (moves ? '' : '<p class="note">움직이는 데가 없는 부품이라 열림 막대가 없다. 끌어서 돌려 보거나 「저절로 돌기」 를 누른다.</p>') +
+      (!it && model !== p ? '<p class="note">이 묶음의 ' + esc(T.label(model)) + ' 모형이다. <a class="chip" href="part.html?p=' + p.id + '&amp;i=' + model.id + '">' + esc(T.label(model)) + ' 한 장으로</a></p>' : '') +
+      (it && model === p ? '<p class="note">' + esc(T.label(it)) + ' 모형은 아직 없어 ' + esc(p.name) + ' 묶음의 대표 모형으로 보여 준다.</p>' : '') +
+      (model.modelNote ? '<p class="note">' + esc(model.modelNote) + '</p>' : '');
+  } else if (p.moves) {
+    stage = '<div class="stage"><div class="empty"><div><b>3D 준비 중</b>움직이는 부품이라 3D로 만든다. 모형은 회사 확인을 받은 뒤 올린다.</div></div></div>';
+  } else {
+    stage = '<div class="stage"><div class="empty"><div><b>사진 준비 중</b>움직이지 않는 부품이라 사진으로 보여 준다.</div></div></div>';
+  }
+
+  // 이름 · 쉬운 말
+  var crumb = p.isBlum
+    ? '<nav class="crumb" aria-label="자리"><a href="parts.html">부품</a><span>›</span><a href="parts.html#blum">블럼 대응</a><span>›</span><span>' + esc(p.name) + '</span></nav>'
+    : '<nav class="crumb" aria-label="자리"><a href="parts.html">부품</a><span>›</span><span>' + T.NUM[g.no] + ' ' + esc(g.name) + '</span><span>›</span>' +
+      (it ? '<a href="part.html?p=' + p.id + '">' + esc(p.name) + '</a><span>›</span><span>' + esc(T.label(it)) + '</span>' : '<span>' + esc(p.name) + '</span>') + '</nav>';
+  var head;
+  if (p.isBlum) {
+    head = '<header class="head"><h1 class="brush">' + esc(p.name) + '</h1>' +
+      '<span class="en">블럼 홈페이지의 묶음 · <span class="badge b">블럼</span></span>' +
+      '<p class="ez">' + esc(p.easy) + '</p>' +
+      '<p class="ez"><b>우리 쇼핑몰:</b> ' + esc(p.ours) + (p.guess ? ' <span class="badge guess">추정</span>' : '') + '</p></header>';
+  } else if (it) {
+    head = '<header class="head"><h1 class="brush">' + esc(it.name) + (it.en ? '(' + esc(it.en) + ')' : '') + '</h1>' +
+      '<span class="en">' + esc(p.name) + (it.note ? ' · ' + esc(it.note) : '') + (it.confirmed ? ' · <span class="badge ok">회사 확인 ' + esc(it.confirmed) + '</span>' : '') + '</span>' +
+      '<p class="ez">' + esc(it.easy || p.easy) + ((it.guess || (!it.easy && p.guess)) ? ' <span class="badge guess">추정</span>' : '') + '</p></header>';
+  } else {
+    head = '<header class="head"><h1 class="brush">' + esc(p.name) + '</h1>' +
+      '<span class="en">' + T.NUM[g.no] + ' ' + esc(g.name) + (p.tag ? ' · <span class="badge ' + p.tag + '">' + esc(p.brand) + '</span>' : '') + '</span>' +
+      '<p class="ez">' + esc(p.easy) + (p.guess ? ' <span class="badge guess">추정</span>' : '') + '</p></header>';
+  }
+
+  // 아래 — 안에 든 것 / 같은 식구
+  var parts = [];
+  var own = T.itemsOf(p).filter(function (x) { return typeof x === 'object'; });
+  if (it) {
+    var sib = own.filter(function (x) { return x.id !== it.id; });
+    if (sib.length) parts.push('<section class="sec"><h2 class="brush">같은 식구</h2><p class="w">' + esc(p.name) + ' 안의 다른 것. 누르면 그 한 장으로</p><div class="strip">' + sib.map(tileItem).join('') + '</div></section>');
+  } else if (own.length) {
+    parts.push('<section class="sec"><h2 class="brush">식구</h2><p class="w">누르면 그 한 장으로. 3D가 있는 것은 돌려 볼 수 있다</p><div class="strip">' + own.map(tileItem).join('') + '</div></section>');
+  }
+  if (!it && !p.isBlum) {
+    var body;
+    if (p.sets) body = p.sets.map(function (s) { return (s[0] ? '<span class="set">' + esc(s[0]) + '</span>' : '<span class="set"></span>') + s[1].map(chipItem).join(''); }).join('');
+    else body = T.itemsOf(p).length ? T.itemsOf(p).map(chipItem).join('') : '<span class="chip">따로 나뉜 것 없음</span>';
+    parts.push('<section class="sec"><h2 class="brush">안에 든 것</h2><p class="w">쇼핑몰 분류 안의 이름 그대로</p><div class="chips">' + body + '</div></section>');
+  }
+  // 같은 자리의 다른 부품
+  if (p.isBlum) {   // 블럼 묶음 — 우리 쇼핑몰의 블럼 분류와 다른 블럼 묶음
+    var bp = T.PARTS.filter(function (x) { return x.brand === '블럼'; });
+    var bo = T.BLUM.filter(function (x) { return x.model && x.id !== p.id; });
+    parts.push('<section class="sec"><h2 class="brush">우리 쇼핑몰의 블럼</h2><p class="w">블럼 묶음 가운데 우리가 파는 것</p><div class="strip">' + bp.map(tilePart).join('') + '</div></section>');
+    if (bo.length) parts.push('<section class="sec"><h2 class="brush">블럼의 다른 묶음</h2><p class="w">우리 쇼핑몰에는 없다 — 필요하면 주문</p><div class="strip">' + bo.map(tileBlum).join('') + '</div></section>');
+  }
+  var near = p.isBlum ? [] : T.PARTS.filter(function (x) { return x.g === p.g && x.id !== p.id; });
+  if (near.length) parts.push('<section class="sec"><h2 class="brush">관련 부품</h2><p class="w">' + T.NUM[g.no] + ' ' + esc(g.name) + ' 자리의 다른 부품</p><div class="strip">' + near.map(tilePart).join('') + '</div></section>');
+  // 이 부품에 나오는 말
+  var words = T.WORDS.filter(function (w) { return (w.from || []).indexOf(p.id) >= 0 || (w.part || []).indexOf(p.id) >= 0; });
+  if (words.length) parts.push('<section class="sec"><h2 class="brush">나오는 말</h2><p class="w">누르면 용어 칸의 그 낱말로</p><div class="chips">' + words.map(function (w) { return '<a class="chip" href="term.html?t=' + w.id + '">' + esc(w.name) + '</a>'; }).join('') + '</div></section>');
+
+  // 고르기 판 — 오른쪽 칸 (이름 아래)
+  function pickPanel() {
+    var slider = function (k, label) {
+      var lim = ' min="' + pick[k][0] + '" max="' + pick[k][1] + '" step="10"';
+      return '<div class="sl"><span>' + label + '</span><input type="range" data-k="' + k + '"' + lim + ' aria-label="장 ' + label + '">' +
+        '<span class="num"><input type="number" data-k="' + k + '"' + lim + ' aria-label="장 ' + label + ' mm">mm</span></div>';
+    };
+    return '<p class="pk-guess"><span class="badge guess">추정</span> 고를 수 있는 색 · 문 재질 무게 · 강도 범위는 블럼 자료와 흔한 값을 보고 채웠다. 회사 확인 전이고, 품번은 아직 없다.</p>' +
+      '<div class="grp"><h3>장 크기 <small>장 앞에서 잰 바깥 크기</small></h3>' + slider('h', '높이') + slider('w', '너비') + '</div>' +
+      '<div class="grp"><h3>문</h3><div class="opts" data-list="mat"></div><div class="opts" data-list="handle"></div><p class="kg" id="kg"></p></div>' +
+      '<div class="grp"><h3>문 색</h3><div class="sw" data-list="door"></div></div>' +
+      '<div class="grp"><h3>몸통 색</h3><div class="sw" data-list="body"></div></div>' +
+      '<div class="grp"><h3>리프트 덮개 색 <small>블럼 마감</small></h3><div class="sw" data-list="cap"></div></div>' +
+      '<div id="res"></div>';
+  }
+
+  // 고르기 판이 없는 부품 — 오른쪽에 맞는 규격 찾기(있으면) + 색 고르기 (사용자 11-03)
+  var fit = p.fit || null;
+  function sidePanel() {
+    var out = '';
+    if (fit && fit.type === 'rail') {
+      out += '<div class="grp"><h3>맞는 레일 길이 찾기 <small>장 안쪽 깊이를 잰다 — 앞판 뒤에서 뒤판까지</small></h3>' + fitSlider('depth', '깊이', fit.depth) + '<div id="fitres"></div></div>';
+    } else if (fit && fit.type === 'hinge') {
+      out += '<div class="grp"><h3>맞는 경첩 찾기 <small>문 높이와 문이 옆판을 덮는 모양</small></h3>' + fitSlider('dh', '문 높이', fit.height) +
+        '<div class="opts" data-flist="cover"></div><div class="opts" data-flist="weight"></div><div id="fitres"></div></div>';
+    }
+    return out + '<div id="paint"></div>' +
+      '<p class="pk-guess"><span class="badge guess">추정</span> 색은 예시다 — 실제 파는 색 · 마감은 회사 확인 전이다.' + (fit ? ' 맞는 규격의 규칙도 흔한 업계 기준으로 채운 것이라 회사 확인 전이고, 품번은 아직 없다.' : '') + '</p>';
+  }
+  function fitSlider(k, label, lim) {
+    var a = ' min="' + lim[0] + '" max="' + lim[1] + '" step="10"';
+    return '<div class="sl"><span>' + label + '</span><input type="range" data-f="' + k + '"' + a + ' aria-label="' + label + '">' +
+      '<span class="num"><input type="number" data-f="' + k + '"' + a + ' aria-label="' + label + ' mm">mm</span></div>';
+  }
+
+  if (model) main.innerHTML = crumb + '<div class="pk"><div class="pk-left">' + stage + '</div><div class="pk-right">' + head + (pick ? pickPanel() : sidePanel()) + '</div></div>' + parts.join('');
+  else main.innerHTML = crumb + stage + head + parts.join('');
+
+  // 3D — 열림 막대는 움직임의 앞부분(여는 동안)을 짚는다
+  if (model) {
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js';
+    document.head.appendChild(s);
+    var mv = document.getElementById('mv'), range = document.getElementById('open'), out = document.getElementById('openOut'), play = document.getElementById('play');
+    var openSeconds = model.openSeconds || 1;
+    var syncUrl = null, onLoad = null;   // 고르기 판이 채운다
+    var seek = function () {
+      if (!range) return;
+      out.value = range.value + '%';
+      out.textContent = range.value + '%';
+      mv.currentTime = (range.value / 100) * openSeconds;
+      if (syncUrl) syncUrl();
+    };
+    // 한 번도 틀지 않으면 움직임이 붙지 않아(길이 0초) 시간을 옮겨도 그대로다.
+    // 한 번 틀고, 길이가 잡히면 멈춘 뒤 옮긴다 — 불러온 직후에는 아직 0초다
+    var armed = false;
+    var arm = function (done) {
+      if (armed) return done();
+      mv.play();
+      var tries = 0;
+      (function wait() {
+        if (mv.duration > 0 || tries++ > 180) { mv.pause(); armed = true; done(); }
+        else requestAnimationFrame(wait);
+      })();
+    };
+    mv.addEventListener('load', function () { if (onLoad) onLoad(); if (moves) arm(seek); });
+    if (range) range.addEventListener('input', function () {
+      if (!mv.paused) { mv.pause(); play.textContent = '저절로 움직이기'; play.classList.remove('on'); }
+      arm(seek);
+    });
+    play.addEventListener('click', function () {
+      if (!moves) {   // 움직임 없는 모형 — 제자리에서 돌린다
+        var on = !mv.hasAttribute('auto-rotate');
+        if (on) mv.setAttribute('auto-rotate', ''); else mv.removeAttribute('auto-rotate');
+        play.textContent = on ? '멈춤' : '저절로 돌기';
+        play.classList.toggle('on', on);
+        return;
+      }
+      if (mv.paused) { mv.play(); play.textContent = '멈춤'; play.classList.add('on'); }
+      else { mv.pause(); play.textContent = '저절로 움직이기'; play.classList.remove('on'); }
+    });
+    document.getElementById('views').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-orbit]');
+      if (!b) return;
+      mv.cameraOrbit = b.dataset.orbit;
+      Array.prototype.forEach.call(this.querySelectorAll('[data-orbit]'), function (o) { o.classList.toggle('on', o === b); });
+    });
+
+    if (pick) {
+      var st = {}, NUMK = { h: 1, w: 1 };
+      Object.keys(pick.start).forEach(function (k) { st[k] = pick.start[k]; });
+      var find = function (list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return list[0]; };
+      var n = function (x) { return Math.round(x).toLocaleString('ko-KR'); };
+      var each = function (sel, f) { Array.prototype.forEach.call(document.querySelectorAll(sel), f); };
+
+      // 주소에 남은 값부터 — 보낸 주소를 열면 같은 장 · 같은 색
+      var q0 = new URLSearchParams(location.search);
+      Object.keys(st).forEach(function (k) {
+        var v = q0.get(k);
+        if (v == null) return;
+        if (NUMK[k]) { v = parseInt(v, 10); if (!isNaN(v)) st[k] = v; }
+        else if (pick[k].some(function (o) { return o.id === v; })) st[k] = v;
+      });
+      var o0 = parseInt(q0.get('open'), 10);
+      if (!isNaN(o0)) range.value = Math.max(0, Math.min(100, o0));
+
+      // 문 무게 → 힘 숫자 → 맞는 강도
+      var calc = function () {
+        var mat = find(pick.mat, st.mat), hd = find(pick.handle, st.handle);
+        var kg = Math.round(((st.w / 1000) * (st.h / 1000) * mat.kgm2 + hd.kg) * 10) / 10;
+        var lf = Math.round(st.h * kg);
+        var pw = pick.power, r = { kg: kg, lf: lf, mat: mat, hd: hd };
+        r.fits = pw.filter(function (x) { return lf >= x.min && lf <= x.max; });
+        if (st.h < pick.h[0] || st.h > pick.h[1]) r.warn = it.en + ' 는 장 높이 ' + n(pick.h[0]) + '~' + n(pick.h[1]) + 'mm 에 맞는다 (추정). 이 높이는 다른 리프트를 상담';
+        else if (st.w < pick.w[0] || st.w > pick.w[1]) r.warn = it.en + ' 는 장 너비 ' + n(pick.w[0]) + '~' + n(pick.w[1]) + 'mm 에 맞는다. 더 넓으면 장을 나눈다';
+        else if (lf < pw[0].min) r.warn = '문이 가벼워서 힘이 남는다 (힘 숫자 ' + n(pw[0].min) + ' 밑). 다른 리프트를 상담';
+        else if (lf > pw[pw.length - 1].max) r.warn = '문이 무거워서 못 든다 (힘 숫자 ' + n(pw[pw.length - 1].max) + ' 넘음). 문을 가볍게 하거나 다른 리프트를 상담';
+        r.hinges = pick.hingesMin;
+        for (var i = 0; i < pick.hinges.length; i++) if (st.w >= pick.hinges[i].w || kg >= pick.hinges[i].kg) { r.hinges = pick.hinges[i].n; break; }
+        return r;
+      };
+      var ruleMax = Math.ceil(pick.power[pick.power.length - 1].max / 1000) * 1000 + 1000;
+      var ruler = function (r) {
+        var pct = function (v) { return Math.max(0, Math.min(100, v / ruleMax * 100)); };
+        return '<div class="rul">' + pick.power.map(function (x) {
+          return '<div class="rul-row' + (r.fits.indexOf(x) >= 0 ? ' fit' : '') + '"><span>' + esc(x.id) + '</span><div class="trk"><b style="left:' + pct(x.min) + '%;width:' + (pct(x.max) - pct(x.min)) + '%"></b><i style="left:' + pct(r.lf) + '%"></i></div></div>';
+        }).join('') + '<div class="rul-cap"><span>0</span><span>힘 숫자 ' + n(r.lf) + '</span><span>' + n(ruleMax) + '</span></div></div>';
+      };
+      var resHtml = function (r) {
+        var why = '<div class="why">힘 숫자 ' + n(r.lf) + ' = 장 높이 ' + n(st.h) + 'mm × 문 두 쪽 ' + r.kg + 'kg</div>';
+        if (r.warn) return '<div class="res warn"><div class="k">맞는 리프트</div><div class="v">' + esc(r.warn) + '</div>' + why + ruler(r) + '</div>';
+        var both = r.fits.length > 1;
+        return '<div class="res"><div class="k">맞는 리프트 <span class="badge guess">추정</span></div>' +
+          '<div class="v">' + esc(r.fits.map(function (x) { return x.id; }).join(' · ')) + '</div>' + why + ruler(r) + '<ul>' +
+          (both ? '<li>두 강도가 겹치는 자리 — 손잡이를 바꾸거나 문이 더 무거워질 수 있으면 ' + esc(r.fits[1].id) + '</li>' : '') +
+          '<li>리프트 장치 양쪽 한 쌍 · 덮개 ' + esc(find(pick.cap, st.cap).name) + '</li>' +
+          '<li>두 문을 잇는 가운데 경첩 ' + r.hinges + '개</li>' +
+          '<li>품번 · 가격은 회사 확인 뒤에 붙는다</li></ul></div>';
+      };
+
+      // 모형 — 가까운 높이 모형을 부르고, 남은 차이는 높이 · 깊이 같은 배율, 너비는 따로
+      var loadedH = null;
+      var modelH = function () {
+        var best = pick.heights[0];
+        pick.heights.forEach(function (x) { if (Math.abs(x - st.h) < Math.abs(best - st.h)) best = x; });
+        return best;
+      };
+      var shape = function () {
+        var mh = modelH();
+        if (mh !== loadedH) { loadedH = mh; armed = false; mv.setAttribute('src', pick.model.replace('{h}', mh)); return; }
+        var s = (st.h / mh).toFixed(3);
+        mv.setAttribute('scale', (st.w / pick.modelWidth).toFixed(3) + ' ' + s + ' ' + s);   // 속성으로 — 모형 보기가 깨어나기 전에도 안전
+        if (mv.updateFraming) mv.updateFraming();
+      };
+      var paint = function () {
+        if (!mv.model) return;
+        mv.model.materials.forEach(function (m) {
+          Object.keys(pick.paint).forEach(function (k) { if (pick.paint[k] === m.name) m.pbrMetallicRoughness.setBaseColorFactor(find(pick[k], st[k]).hex); });
+        });
+      };
+      onLoad = function () { shape(); paint(); };
+      syncUrl = function () {
+        if (!history.replaceState) return;
+        var q = new URLSearchParams();
+        q.set('p', p.id); q.set('i', it.id);
+        Object.keys(st).forEach(function (k) { q.set(k, st[k]); });
+        if (+range.value) q.set('open', range.value);
+        history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash);
+      };
+
+      // 고르기 단추 채우기
+      each('[data-list]', function (el) {
+        var k = el.dataset.list;
+        el.innerHTML = pick[k].map(function (o) {
+          if (o.hex) return '<button type="button" data-k="' + k + '" data-v="' + o.id + '" title="' + esc(o.name) + '"><i style="background:' + o.hex + '"></i>' + esc(o.name) + '</button>';
+          return '<button type="button" class="opt" data-k="' + k + '" data-v="' + o.id + '">' + esc(o.name) + '</button>';
+        }).join('');
+      });
+
+      var update = function (from) {
+        var r = calc();
+        each('.pk-right input[data-k]', function (el) { if (el !== from) el.value = st[el.dataset.k]; });
+        each('.pk-right button[data-k]', function (el) { el.classList.toggle('on', st[el.dataset.k] === el.dataset.v); });
+        document.getElementById('kg').innerHTML = '문 두 쪽 합 약 <b>' + r.kg + 'kg</b> (' + esc(r.mat.name) + ' ' + r.mat.kgm2 + 'kg/㎡ 로 짐작' + (r.hd.kg ? ' + 손잡이' : '') + ')';
+        document.getElementById('res').innerHTML = resHtml(r);
+        document.getElementById('dim').textContent = '높이 ' + n(st.h) + ' · 너비 ' + n(st.w) + ' mm';
+        shape();
+        paint();
+        syncUrl();
+      };
+      var setVal = function (k, v, from) {
+        if (NUMK[k]) { v = parseInt(v, 10); if (isNaN(v)) return; }
+        st[k] = v;
+        update(from);
+      };
+      var panel = document.querySelector('.pk-right');
+      panel.addEventListener('input', function (e) {
+        // 숫자 칸은 다 쓴 뒤(change)에 — '7' 을 칠 때 7mm 로 튀지 않게
+        if (e.target.dataset.k && e.target.type === 'range') setVal(e.target.dataset.k, e.target.value, e.target);
+      });
+      panel.addEventListener('change', function (e) {
+        var el = e.target;
+        if (!el.dataset.k || el.type !== 'number') return;
+        if (isNaN(parseInt(el.value, 10))) { el.value = st[el.dataset.k]; return; }
+        setVal(el.dataset.k, el.value, null);
+      });
+      panel.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-k]');
+        if (b) setVal(b.dataset.k, b.dataset.v, null);
+      });
+      update(null);
+    } else {
+      // ── 고르기 판이 없는 부품: 색 고르기 + 맞는 규격 찾기 ──
+      var qs = new URLSearchParams(location.search);
+      var nn = function (x) { return Math.round(x).toLocaleString('ko-KR'); };
+      var findIn = function (list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; };
+      var panel = document.querySelector('.pk-right');
+
+      // 맞는 규격 찾기 — 값은 주소(depth · dh · cover · weight)에 남는다
+      var fs = {};
+      if (fit && fit.type === 'rail') fs.depth = fit.start;
+      if (fit && fit.type === 'hinge') { fs.dh = fit.start; fs.cover = fit.cover[0].id; fs.weight = fit.weight[0].id; }
+      Object.keys(fs).forEach(function (k) {
+        var v = qs.get(k);
+        if (v == null) return;
+        if (k === 'depth' || k === 'dh') { v = parseInt(v, 10); if (!isNaN(v)) fs[k] = v; }
+        else if (findIn(fit[k], v)) fs[k] = v;
+      });
+      var railHtml = function () {
+        var room = fs.depth - fit.margin;
+        var okLens = fit.lengths.filter(function (l) { return l <= room; });
+        var best = okLens.length ? okLens[okLens.length - 1] : null;
+        var why = '<div class="why">장 안쪽 깊이 ' + nn(fs.depth) + 'mm − 여유 ' + fit.margin + 'mm = ' + nn(room) + 'mm 안에 드는 가장 긴 레일</div>';
+        var lens = '<div class="lens">' + fit.lengths.map(function (l) { return '<span class="' + (l === best ? 'on' : l > room ? 'no' : '') + '">' + l + '</span>'; }).join('') + '</div>';
+        if (!best) return '<div class="res warn"><div class="k">맞는 레일 길이</div><div class="v">장이 얕아 맞는 레일이 없다 — 가장 짧은 레일이 ' + fit.lengths[0] + 'mm</div>' + why + lens + '</div>';
+        return '<div class="res"><div class="k">맞는 레일 길이 <span class="badge guess">추정</span></div><div class="v">' + best + 'mm</div>' + why + lens +
+          '<ul><li>서랍 통 길이 — 밑에 숨는 언더레일은 레일보다 10mm 짧게, 옆에 붙는 볼레일은 레일과 같게</li><li>레일은 서랍 하나에 양쪽 한 쌍</li><li>품번 · 가격은 회사 확인 뒤에 붙는다</li></ul></div>';
+      };
+      var hingeHtml = function () {
+        if (fs.dh > fit.height[1]) return '<div class="res warn"><div class="k">맞는 경첩</div><div class="v">문 높이 ' + nn(fit.height[1]) + 'mm 넘는 문은 경첩 수를 따로 상담</div></div>';
+        var c = fit.counts[0];
+        for (var i = 0; i < fit.counts.length; i++) if (fs.dh <= fit.counts[i].upTo) { c = fit.counts[i]; break; }
+        var w = findIn(fit.weight, fs.weight), cv = findIn(fit.cover, fs.cover);
+        var n = c.n + w.plus;
+        return '<div class="res"><div class="k">맞는 경첩 <span class="badge guess">추정</span></div><div class="v">' + esc(cv.kind) + ' 경첩 ' + n + '개</div>' +
+          '<div class="why">문 높이 ' + nn(fs.dh) + 'mm → ' + c.n + '개' + (w.plus ? ' + 무거운 문 ' + w.plus + '개' : '') + ' (' + fit.counts.map(function (x) { return nn(x.upTo) + 'mm까지 ' + x.n + '개'; }).join(' · ') + ')</div>' +
+          '<ul><li>' + esc(cv.kind) + ' = ' + esc(cv.name) + ' — ' + esc(cv.easy) + '</li><li>문 위 · 아래 끝에서 약 100mm 안쪽에 하나씩, 나머지는 그 사이에 고르게</li><li>품번 · 가격은 회사 확인 뒤에 붙는다</li></ul></div>';
+      };
+      var fitRender = function (from) {
+        if (!fit) return;
+        Array.prototype.forEach.call(panel.querySelectorAll('input[data-f]'), function (el) { if (el !== from) el.value = fs[el.dataset.f]; });
+        Array.prototype.forEach.call(panel.querySelectorAll('[data-flist]'), function (el) {
+          var k = el.dataset.flist;
+          el.innerHTML = fit[k].map(function (o) { return '<button type="button" class="opt' + (fs[k] === o.id ? ' on' : '') + '" data-fk="' + k + '" data-v="' + o.id + '">' + esc(o.name) + (o.kind ? ' <small>' + esc(o.kind) + '</small>' : '') + '</button>'; }).join('');
+        });
+        document.getElementById('fitres').innerHTML = fit.type === 'rail' ? railHtml() : hingeHtml();
+        syncUrl();
+      };
+
+      // 색 고르기 — 모형을 불러온 뒤 재질 이름을 보고 줄을 만든다. 「기본」 은 모형의 원래 색
+      var pc = {};   // 고른 색 { door: 'oak', … }
+      (p.paint || []).forEach(function (gp) { var v = qs.get(gp.id); if (v && findIn(gp.colors, v)) pc[gp.id] = v; });
+      var groups = [], orig = {};
+      var toHex = function (f) {
+        return '#' + f.slice(0, 3).map(function (c) {
+          var v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+          return ('0' + Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16)).slice(-2);
+        }).join('');
+      };
+      var paintApply = function () {
+        if (!mv.model) return;
+        mv.model.materials.forEach(function (m) {
+          groups.forEach(function (gp) {
+            if (gp.mats.indexOf(m.name) < 0) return;
+            var c = pc[gp.id] ? findIn(gp.colors, pc[gp.id]) : null;
+            m.pbrMetallicRoughness.setBaseColorFactor(c ? c.hex : orig[m.name]);
+          });
+        });
+      };
+      var paintRender = function () {
+        var box = document.getElementById('paint');
+        if (!groups.length) { box.innerHTML = '<p class="kg">이 모형은 고를 색이 없다 — 나무결 · 합판처럼 생김새를 보여 주는 모형이다.</p>'; return; }
+        box.innerHTML = groups.map(function (gp) {
+          var base = '<button type="button" class="base' + (!pc[gp.id] ? ' on' : '') + '" data-pk="' + gp.id + '" data-v="" title="모형의 원래 색"><i style="background-color:' + gp.baseHex + '"></i>기본</button>';
+          return '<div class="grp"><h3>' + esc(gp.name) + '</h3><div class="sw">' + base + gp.colors.map(function (c) {
+            return '<button type="button" class="' + (pc[gp.id] === c.id ? 'on' : '') + '" data-pk="' + gp.id + '" data-v="' + c.id + '" title="' + esc(c.name) + '"><i style="background:' + c.hex + '"></i>' + esc(c.name) + '</button>';
+          }).join('') + '</div></div>';
+        }).join('');
+      };
+      onLoad = function () {
+        if (groups.length || !mv.model) return;   // 한 번만
+        var names = mv.model.materials.map(function (m) { return m.name; });
+        mv.model.materials.forEach(function (m) { orig[m.name] = m.pbrMetallicRoughness.baseColorFactor.slice(); });
+        groups = (p.paint || []).filter(function (gp) { return gp.mats.some(function (x) { return names.indexOf(x) >= 0; }); }).map(function (gp) {
+          var first = gp.mats.filter(function (x) { return names.indexOf(x) >= 0; })[0];
+          return { id: gp.id, name: gp.name, mats: gp.mats, colors: gp.colors, baseHex: toHex(orig[first]) };
+        });
+        Object.keys(pc).forEach(function (k) { if (!groups.some(function (gp) { return gp.id === k; })) delete pc[k]; });   // 모형에 없는 줄의 값은 버린다
+        paintRender();
+        paintApply();
+        syncUrl();
+      };
+
+      syncUrl = function () {
+        if (!history.replaceState) return;
+        var q = new URLSearchParams();
+        q.set(p.isBlum ? 'b' : 'p', p.id);
+        if (it) q.set('i', it.id);
+        Object.keys(fs).forEach(function (k) { q.set(k, fs[k]); });
+        Object.keys(pc).forEach(function (k) { q.set(k, pc[k]); });
+        if (range && +range.value) q.set('open', range.value);
+        history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash);
+      };
+      var o1 = parseInt(qs.get('open'), 10);
+      if (range && !isNaN(o1)) range.value = Math.max(0, Math.min(100, o1));
+
+      panel.addEventListener('input', function (e) {
+        var el = e.target;
+        if (el.dataset.f && el.type === 'range') { fs[el.dataset.f] = parseInt(el.value, 10); fitRender(el); }
+      });
+      panel.addEventListener('change', function (e) {
+        var el = e.target;
+        if (!el.dataset.f || el.type !== 'number') return;
+        var v = parseInt(el.value, 10);
+        if (isNaN(v)) { el.value = fs[el.dataset.f]; return; }
+        fs[el.dataset.f] = v;
+        fitRender(null);
+      });
+      panel.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-fk]');
+        if (b) { fs[b.dataset.fk] = b.dataset.v; fitRender(null); return; }
+        var c = e.target.closest('button[data-pk]');
+        if (c) {
+          if (c.dataset.v) pc[c.dataset.pk] = c.dataset.v; else delete pc[c.dataset.pk];
+          paintRender(); paintApply(); syncUrl();
+        }
+      });
+      fitRender(null);
+    }
+  }
+  S.init();
+})();
+</script>
+</body>
+</html>
